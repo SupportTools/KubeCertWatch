@@ -1,0 +1,20 @@
+apiVersion: v2
+name: kubecertwatch
+version: 0.1.0
+appVersion: 0.1.0
+description: A Kubernetes controller that monitors TLS certificates and cert-manager resources, providing alerts and metrics for certificate expiration and status.
+type: application
+keywords:
+  - kubernetes
+  - certificates
+  - monitoring
+  - cert-manager
+  - tls
+  - security
+home: https://github.com/supporttools/kubecertwatch
+sources:
+  - https://github.com/supporttools/kubecertwatch
+maintainers:
+  - name: mattmattox
+    email: mmattox@support.tools
+icon: https://cdn.support.tools/KubeCertWatch/logo-nobg.png

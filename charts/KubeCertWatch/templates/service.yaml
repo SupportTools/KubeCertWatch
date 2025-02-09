@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: "kubecertwatch"
+  labels:
+    app: "kubecertwatch"
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: {{ .Values.settings.metrics.port | quote }}
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.settings.metrics.port }}
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    app: "kubecertwatch"

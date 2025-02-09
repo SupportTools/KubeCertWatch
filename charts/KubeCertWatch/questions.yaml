@@ -1,0 +1,113 @@
+categories:
+- Monitoring
+- Security
+questions:
+- variable: settings.clusterName
+  required: true
+  description: "Name of the cluster for metrics labeling"
+  label: "Cluster Name"
+  type: string
+  group: "General Settings"
+
+- variable: settings.debug
+  default: false
+  description: "Enable debug logging"
+  label: "Debug Mode"
+  type: boolean
+  group: "General Settings"
+
+- variable: settings.cronSchedule
+  default: "0 */12 * * *"
+  description: "Schedule for certificate checks (cron format)"
+  label: "Check Schedule"
+  type: string
+  group: "General Settings"
+
+- variable: settings.metrics.enabled
+  default: true
+  description: "Enable Prometheus metrics"
+  label: "Enable Metrics"
+  type: boolean
+  group: "Metrics Configuration"
+
+- variable: settings.metrics.port
+  default: 9990
+  description: "Port for metrics endpoint"
+  label: "Metrics Port"
+  type: int
+  min: 1024
+  max: 65535
+  group: "Metrics Configuration"
+
+- variable: cert-manager.enabled
+  default: false
+  description: "Enable cert-manager certificate monitoring"
+  label: "Enable Cert-Manager Integration"
+  type: boolean
+  group: "Cert-Manager Integration"
+
+- variable: service.type
+  default: "ClusterIP"
+  description: "Service type for KubeCertWatch"
+  type: enum
+  options:
+    - "ClusterIP"
+    - "NodePort"
+  label: "Service Type"
+  group: "Service Configuration"
+
+- variable: resources.limits.cpu
+  default: "200m"
+  description: "CPU limit"
+  label: "CPU Limit"
+  type: string
+  group: "Resource Limits"
+
+- variable: resources.limits.memory
+  default: "256Mi"
+  description: "Memory limit"
+  label: "Memory Limit"
+  type: string
+  group: "Resource Limits"
+
+- variable: resources.requests.cpu
+  default: "100m"
+  description: "CPU request"
+  label: "CPU Request"
+  type: string
+  group: "Resource Requests"
+
+- variable: resources.requests.memory
+  default: "128Mi"
+  description: "Memory request"
+  label: "Memory Request"
+  type: string
+  group: "Resource Requests"
+
+- variable: nodeSelector
+  default: {}
+  description: "Node selector for pod assignment"
+  label: "Node Selector"
+  type: string
+  group: "Advanced"
+
+- variable: tolerations
+  default: []
+  description: "Pod tolerations"
+  label: "Tolerations"
+  type: string
+  group: "Advanced"
+
+- variable: affinity
+  default: {}
+  description: "Pod affinity rules"
+  label: "Affinity Rules"
+  type: string
+  group: "Advanced"
+
+- variable: podAnnotations
+  default: {}
+  description: "Additional pod annotations"
+  label: "Pod Annotations"
+  type: string
+  group: "Advanced"

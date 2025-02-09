@@ -1,0 +1,26 @@
+apiVersion: v2
+name: kubecertwatch
+version: ${CHART_VERSION}
+appVersion: ${APP_VERSION}
+description: A Kubernetes controller that monitors TLS certificates and cert-manager resources, providing alerts and metrics for certificate expiration and status.
+type: application
+keywords:
+- kubernetes
+- certificates
+- monitoring
+- cert-manager
+- tls
+- security
+dependencies:
+- name: cert-manager
+  version: ">=1.0.0"
+  repository: https://charts.jetstack.io
+  condition: cert-manager.enabled
+  optional: true
+home: https://github.com/supporttools/kubecertwatch
+sources:
+- https://github.com/supporttools/kubecertwatch
+maintainers:
+- name: mattmattox
+  email: mmattox@support.tools
+icon: https://cdn.support.tools/KubeCertWatch/logo-nobg.png
