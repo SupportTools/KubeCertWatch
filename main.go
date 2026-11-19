@@ -9,22 +9,21 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/robfig/cron/v3"
 	"github.com/supporttools/KubeCertWatch/pkg/adminServer"
 	"github.com/supporttools/KubeCertWatch/pkg/checks"
 	"github.com/supporttools/KubeCertWatch/pkg/config"
 	"github.com/supporttools/KubeCertWatch/pkg/k8s"
 	"github.com/supporttools/KubeCertWatch/pkg/logging"
 	"github.com/supporttools/KubeCertWatch/pkg/metrics"
-	"github.com/robfig/cron/v3"
 	"k8s.io/client-go/kubernetes"
 )
 
 var (
-	logger            = logging.SetupLogging()
-	taskLock          sync.Mutex
-	isTaskRunning     bool
-	lastSuccessfulRun time.Time
-	clientset         *kubernetes.Clientset
+	logger        = logging.SetupLogging()
+	taskLock      sync.Mutex
+	isTaskRunning bool
+	clientset     *kubernetes.Clientset
 )
 
 // withRetry implements retry logic for transient failures
@@ -46,13 +45,6 @@ func withRetry(ctx context.Context, fn func() error) error {
 		return nil
 	}
 	return nil
-}
-
-// isHealthy returns the health status of the service
-func isHealthy() bool {
-	taskLock.Lock()
-	defer taskLock.Unlock()
-	return !isTaskRunning || time.Since(lastSuccessfulRun) < time.Hour
 }
 
 func main() {
@@ -131,7 +123,7 @@ func runChecks(ctx context.Context) {
 
 	// Run checks in parallel
 	wg.Add(2)
-	
+
 	// TLS secret checks
 	go func() {
 		defer wg.Done()
@@ -174,9 +166,6 @@ func runChecks(ctx context.Context) {
 	}
 
 	if errCount == 0 {
-		taskLock.Lock()
-		lastSuccessfulRun = time.Now()
-		taskLock.Unlock()
 		logger.Println("Certificate checks completed successfully.")
 	} else {
 		logger.Printf("Certificate checks completed with %d errors.", errCount)

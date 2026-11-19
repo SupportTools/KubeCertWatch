@@ -8,12 +8,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/supporttools/KubeCertWatch/pkg/checks"
 	"github.com/supporttools/KubeCertWatch/pkg/config"
 	"github.com/supporttools/KubeCertWatch/pkg/logging"
 	"github.com/supporttools/KubeCertWatch/pkg/pages"
 	"github.com/supporttools/KubeCertWatch/pkg/version"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/client-go/kubernetes"
 )
 

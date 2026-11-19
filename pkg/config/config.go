@@ -87,13 +87,13 @@ func validateCronExpression(cronExpr string) error {
 	if cronExpr == "" {
 		return fmt.Errorf("cron expression cannot be empty")
 	}
-	
+
 	// Attempt to parse the cron expression
 	_, err := cron.ParseStandard(cronExpr)
 	if err != nil {
 		return fmt.Errorf("invalid cron expression: %v", err)
 	}
-	
+
 	return nil
 }
 
