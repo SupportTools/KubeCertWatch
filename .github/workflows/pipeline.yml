@@ -3,34 +3,38 @@ name: CI/CD - v1.0
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   Test:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted-linux
 
-    # Fetch tier: Go modules and the two pinned analysis tools come from proxy.golang.org
-    # with sum.golang.org verification (pinned + checksummed upstream). GitHub-hosted runner,
-    # no internal mirror reachable; follow-up filed to move this job onto the self-hosted
-    # pool / Athens (cluster-services-1493).
+    # Fetch tier (cluster-services-1498): self-hosted runner. Go toolchain baked into the runner image
+    # (no download; GOTOOLCHAIN=local). Go modules and the two pinned analysis tools come from Athens
+    # (GOPROXY=https://goproxy.support.tools only, a cache we run), go.sum / sum.golang.org verified.
     env:
       STATICCHECK_VERSION: v0.8.2   # honnef.co/go/tools, needs Go >= 1.26
       GOSEC_VERSION: v2.30.0        # github.com/securego/gosec/v2, needs Go >= 1.26
+      GOPROXY: https://goproxy.support.tools
+      GOTOOLCHAIN: local
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          # The module says go 1.23; the pinned linters need a 1.26 toolchain to build.
-          go-version: "1.26.3"
-          cache: true
+      - name: Verify baked Go
+        run: |
+          set -euo pipefail
+          command -v go >/dev/null 2>&1 || { echo "::error::go is missing from this self-hosted runner; it must be baked into the runner image (no download fallback)."; exit 1; }
+          # The module says go 1.23; the pinned linters need a >= 1.26 toolchain to build.
+          go version
 
       - name: Install static analysis tools (pinned)
         run: |
-          go install "honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}"
-          go install "github.com/securego/gosec/v2/cmd/gosec@${GOSEC_VERSION}"
+          echo "go module source: GOPROXY=${GOPROXY}"
+          GOBIN="${RUNNER_TEMP}/bin" go install "honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}"
+          GOBIN="${RUNNER_TEMP}/bin" go install "github.com/securego/gosec/v2/cmd/gosec@${GOSEC_VERSION}"
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
 
       - name: Formatting
         run: |
@@ -69,7 +73,7 @@ jobs:
     needs: Test
     # Publishes supporttools/kubecertwatch:latest; only from main, never from a branch push.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted-linux
 
     steps:
       - uses: actions/checkout@v4
@@ -94,7 +98,8 @@ jobs:
           --build-arg VERSION=v${{ github.run_number }} \
           --build-arg GIT_COMMIT=${{ github.sha }} \
           --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
-          --cache-from supporttools/kubecertwatch:latest \
+          --build-arg GOPROXY=https://goproxy.support.tools \
+          --build-arg APK_FALLBACK=none \
           -t supporttools/kubecertwatch:"v${{ github.run_number }}" \
           -t supporttools/kubecertwatch:latest \
           --push \
@@ -102,6 +107,10 @@ jobs:
 
   Publish:
     runs-on: ubuntu-latest
+    # Manual only (cluster-services-1498): this job pulls the cert-manager chart from upstream
+    # charts.jetstack.io on a GitHub-hosted runner and publishes to the legacy charts.support.tools
+    # repo. KubeCertWatch is not deployed anywhere, so a main push builds and pushes the image only.
+    if: github.event_name == 'workflow_dispatch'
     needs:
       - Build
 
