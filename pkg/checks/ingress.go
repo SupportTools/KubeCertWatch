@@ -84,7 +84,10 @@ func checkSSL(url string) string {
 		Timeout: 10 * time.Second,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true, // Skip cert verification for this check
+				// This probe only reports whether a TLS handshake happens. It dials the
+				// ingress IP as well as the hostname, so hostname verification would always
+				// fail for the IP check; no credentials or data are sent over it.
+				InsecureSkipVerify: true, // #nosec G402 -- TLS-presence probe, see above
 			},
 		},
 	}

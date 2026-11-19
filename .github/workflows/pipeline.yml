@@ -8,67 +8,67 @@ jobs:
   Test:
     runs-on: ubuntu-latest
 
+    # Fetch tier: Go modules and the two pinned analysis tools come from proxy.golang.org
+    # with sum.golang.org verification (pinned + checksummed upstream). GitHub-hosted runner,
+    # no internal mirror reachable; follow-up filed to move this job onto the self-hosted
+    # pool / Athens (cluster-services-1493).
+    env:
+      STATICCHECK_VERSION: v0.8.2   # honnef.co/go/tools, needs Go >= 1.26
+      GOSEC_VERSION: v2.30.0        # github.com/securego/gosec/v2, needs Go >= 1.26
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: "1.22"
+          # The module says go 1.23; the pinned linters need a 1.26 toolchain to build.
+          go-version: "1.26.3"
+          cache: true
 
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-               
-
-      - name: Install static analysis tools
+      - name: Install static analysis tools (pinned)
         run: |
-          go install golang.org/x/lint/golint@latest
-          go install honnef.co/go/tools/cmd/staticcheck@latest
-          go install github.com/securego/gosec/v2/cmd/gosec@latest
-          go install github.com/psampaz/go-mod-outdated@latest
-          go install github.com/remyoudompheng/go-misc/deadcode@latest
-          go install github.com/prometheus/client_golang/prometheus@latest
+          go install "honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}"
+          go install "github.com/securego/gosec/v2/cmd/gosec@${GOSEC_VERSION}"
+
+      - name: Formatting
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "${unformatted}" ]; then
+            echo "gofmt needed on:"; echo "${unformatted}"; exit 1
+          fi
 
       - name: Go static analysis
         run: |
-          golint ./...
-          staticcheck ./...
           go vet ./...
-          deadcode .
+          staticcheck ./...
 
       - name: Dependency management
         run: |
-          go mod vendor
           go mod verify
-          go mod tidy
+          go mod tidy -diff
 
       - name: Security scanning
-        run: |
-          gosec -exclude-dir=vendor ./...
-          # Additional check for potential certificate handling issues
-          gosec -include=G108,G109,G110 ./...
+        run: gosec ./...
 
-      - name: Test coverage
+      - name: Test (race + coverage)
         run: |
-          go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+          go test -race -coverprofile=coverage.txt -covermode=atomic ./...
           go tool cover -func=coverage.txt
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+      - name: Upload coverage report (artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          file: ./coverage.txt
-          flags: unittests
-          fail_ci_if_error: true
+          name: coverage
+          path: coverage.txt
+          if-no-files-found: ignore
 
   Build:
     needs: Test
+    # Publishes supporttools/kubecertwatch:latest; only from main, never from a branch push.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     steps:
